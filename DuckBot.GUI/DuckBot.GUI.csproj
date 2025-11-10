@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop"><ItemGroup>
+  <ProjectReference Include="..\DuckBot.Core\DuckBot.Core.csproj" />
+  <ProjectReference Include="..\DuckBot.Scripting\DuckBot.Scripting.csproj" />
+  <ProjectReference Include="..\DuckBot.Data\DuckBot.Data.csproj" />
+  <ProjectReference Include="..\DuckBot.API\DuckBot.API.csproj" />
+</ItemGroup><PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF></PropertyGroup></Project>
