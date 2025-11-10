@@ -1,9 +1,7 @@
-<<<<<<< HEAD
-﻿# DuckBot (C# + JavaScript)
-=======
+
 # DuckBot (C# + JavaScript)
 
->>>>>>> 9bfbd64d3202ded427c29cd7f82e721cd1c694aa
+
 Native WPF GUI with a JavaScript engine (Jint) for game automation.
 - Username/password login (no license keys)
 - Modular games with remote updates
@@ -14,8 +12,7 @@ Native WPF GUI with a JavaScript engine (Jint) for game automation.
 - .NET 8 SDK
 - Windows 10+
 - Dependencies: Jint, OpenCvSharp4, Tesseract, Microsoft.Data.Sqlite
-<<<<<<< HEAD
-=======
+
 
 ## Run (dev)
 - Set DuckBot.GUI as startup
@@ -33,4 +30,4 @@ Dashboard → Quick Launch → pick instance + script → Run
 ## Modules & Updates
 Each game has `update.json` with version and files.
 App checks server, downloads diffs, and replaces module files.
->>>>>>> 9bfbd64d3202ded427c29cd7f82e721cd1c694aa
+
