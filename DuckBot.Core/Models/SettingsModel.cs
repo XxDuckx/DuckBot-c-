@@ -1,4 +1,6 @@
-﻿namespace DuckBot.Core.Models
+﻿using System.Collections.Generic;
+
+namespace DuckBot.Core.Models
 {
     public class SettingsModel
     {
@@ -6,5 +8,6 @@
         public AdvancedSettings Advanced { get; set; } = new();
         public SolverSettings Solvers { get; set; } = new();
         public BackupSettings Backups { get; set; } = new();
+        public List<MailAccount> MailAccounts { get; set; } = new();
     }
 }

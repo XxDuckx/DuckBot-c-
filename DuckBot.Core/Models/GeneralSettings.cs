@@ -1,4 +1,6 @@
-﻿namespace DuckBot.Core.Models
+﻿using System.Collections.Generic;
+
+namespace DuckBot.Core.Models
 {
     public class GeneralSettings
     {
@@ -10,5 +12,6 @@
         public bool CloseEmulatorsOnStop { get; set; } = false;
         public string Theme { get; set; } = "Dark";
         public bool AutoSaveConfigs { get; set; } = true;
+        public List<string> EmulatorPaths { get; set; } = new();
     }
 }
