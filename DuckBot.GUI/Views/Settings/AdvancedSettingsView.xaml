@@ -1,26 +1,31 @@
-﻿<UserControl x:Class="DuckBot.GUI.Views.Settings.AdvancedSettingsView"
+<UserControl x:Class="DuckBot.GUI.Views.Settings.AdvancedSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="#1e1e1e" Foreground="White">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="10">
-            <TextBlock Text="Advanced Settings" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+        <StackPanel Margin="24">
+            <TextBlock Text="Advanced Settings" FontWeight="Bold" FontSize="18" Margin="0,0,0,16"/>
 
-            <CheckBox x:Name="RestartReconnected" Content="Restart running instances that reconnected" Margin="0,4"/>
-            <CheckBox x:Name="KillBridge" Content="Kill bridge if emulator stays offline" Margin="0,4"/>
-            <CheckBox x:Name="RestartGame" Content="Restart game if home screen is visible" Margin="0,4"/>
-            <CheckBox x:Name="SkipResCheck" Content="Skip emulator display resolution check" Margin="0,4"/>
-            <CheckBox x:Name="SkipUpdates" Content="Skip bot updates and changelog parsing" Margin="0,4"/>
-            <CheckBox x:Name="RestartAfterTimeout" Content="Restart emulator after script timeout" Margin="0,4"/>
-            <CheckBox x:Name="RemoveCooldown" Content="Remove scripts currently on cooldown from queue" Margin="0,4"/>
-            <CheckBox x:Name="CloseUnused" Content="Close emulators not being botted on" Margin="0,4"/>
+            <CheckBox x:Name="RestartReconnected" Content="Restart running instances that reconnected"/>
+            <CheckBox x:Name="KillBridge" Content="Kill bridge if emulator stays offline"/>
+            <CheckBox x:Name="RestartGame" Content="Restart game if home screen is visible"/>
+            <CheckBox x:Name="SkipResCheck" Content="Skip emulator display resolution check"/>
+            <CheckBox x:Name="SkipUpdates" Content="Skip bot updates and changelog parsing"/>
+            <CheckBox x:Name="RestartAfterTimeout" Content="Restart emulator after script timeout"/>
+            <CheckBox x:Name="RemoveCooldown" Content="Remove scripts currently on cooldown from queue"/>
+            <CheckBox x:Name="CloseUnused" Content="Close emulators not being botted on"/>
 
-            <StackPanel Orientation="Horizontal" Margin="0,8">
-                <TextBlock Text="Condition check delay (ms):" Width="250"/>
-                <TextBox x:Name="DelayBox" Width="100" Text="200"/>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <TextBlock Text="Condition check delay (ms):" Width="250" VerticalAlignment="Center"/>
+                <TextBox x:Name="DelayBox" Width="120" Text="200"/>
             </StackPanel>
 
-            <Button x:Name="SaveButton" Content="Save" Width="100" Margin="0,10,0,0" HorizontalAlignment="Right"/>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <TextBlock Text="Update manifest URL:" Width="250" VerticalAlignment="Center"/>
+                <TextBox x:Name="ManifestUrl" Width="320"/>
+            </StackPanel>
+
+            <Button x:Name="SaveButton" Content="Save" Width="120" Margin="0,20,0,0"
+                    HorizontalAlignment="Right" Click="SaveButton_Click"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

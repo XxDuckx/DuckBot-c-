@@ -1,6 +1,9 @@
-﻿using System.Windows;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using DuckBot.Core.Services;
+using Microsoft.Win32;
 
 namespace DuckBot.GUI.Views.Settings
 {
@@ -9,21 +12,43 @@ namespace DuckBot.GUI.Views.Settings
         public RepositorySettingsView()
         {
             InitializeComponent();
-            LoadTemplates();
+            _ = LoadTemplatesAsync();
         }
 
-        private void LoadTemplates()
+        private async Task LoadTemplatesAsync()
         {
             TemplateList.Items.Clear();
-            foreach (var t in RepositoryService.GetTemplates())
+            TemplateList.Items.Add("Loading...");
+            var templates = await RepositoryService.GetTemplatesAsync();
+            TemplateList.Items.Clear();
+            foreach (var t in templates)
                 TemplateList.Items.Add($"{t.Name} ({t.Game}) - by {t.Author}");
         }
 
-        private void RefreshBtn_Click(object sender, RoutedEventArgs e) => LoadTemplates();
+        private async void RefreshBtn_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadTemplatesAsync();
+        }
 
         private void ContributeBtn_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Template contribution coming soon.", "DuckBot");
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Script Templates (*.json)|*.json",
+                Title = "Select template to share"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    RepositoryService.Contribute(dialog.FileName);
+                    MessageBox.Show("Template copied to local contribution folder.", "DuckBot");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not add template: {ex.Message}", "DuckBot");
+                }
+            }
         }
 
         private void BrowseBtn_Click(object sender, RoutedEventArgs e)

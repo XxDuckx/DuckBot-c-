@@ -1,4 +1,6 @@
-﻿namespace DuckBot.Data.Models
+using System.Collections.Generic;
+
+namespace DuckBot.Data.Models
 {
     public class ScriptVariable
     {

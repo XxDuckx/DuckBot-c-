@@ -1,4 +1,6 @@
-﻿using System.IO;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using DuckBot.Data.Models;
 
@@ -26,7 +28,7 @@ namespace DuckBot.Core.Scripts
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             return Directory.GetFiles(dir, "*.json")
-                            .Select(f => Load(f))
+                            .Select(Load)
                             .ToList();
         }
     }

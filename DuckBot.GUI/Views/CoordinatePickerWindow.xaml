@@ -1,7 +1,28 @@
-﻿<Window x:Class="DuckBot.GUI.Views.CoordinatePickerWindow"
+<Window x:Class="DuckBot.GUI.Views.CoordinatePickerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Pick Coordinates" Height="600" Width="800">
-    <Grid>
-        <Image x:Name="SourceImage" Stretch="Uniform" MouseLeftButtonUp="Image_Click"/>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pick Coordinates" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner">
+    <Grid Background="{StaticResource ApplicationBackgroundBrush}" Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="{StaticResource PanelCornerRadius}" Grid.Row="0">
+            <Grid>
+                <Image x:Name="SourceImage" Stretch="Uniform" MouseMove="Image_MouseMove" MouseLeftButtonUp="Image_Click"/>
+                <Canvas x:Name="Overlay" Background="Transparent">
+                    <Line x:Name="CrosshairHorizontal" Stroke="{StaticResource AccentBrush}" StrokeThickness="1" Visibility="Collapsed"/>
+                    <Line x:Name="CrosshairVertical" Stroke="{StaticResource AccentBrush}" StrokeThickness="1" Visibility="Collapsed"/>
+                </Canvas>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,16,0,0" HorizontalAlignment="Right">
+            <TextBlock x:Name="CoordLabel" VerticalAlignment="Center" Margin="0,0,16,0"/>
+            <Button Content="Copy" Width="100" Margin="0,0,8,0" Click="Copy_Click"/>
+            <Button Content="Close" Width="100" Click="Close_Click"/>
+        </StackPanel>
     </Grid>
 </Window>

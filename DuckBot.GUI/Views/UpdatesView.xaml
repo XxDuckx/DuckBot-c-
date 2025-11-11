@@ -1,0 +1,34 @@
+<UserControl x:Class="DuckBot.GUI.Views.UpdatesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,12">
+            <Button Content="Check for Updates" Width="170" Margin="0,0,8,0" Click="Check_Click"
+                    Style="{StaticResource AccentButtonStyle}"/>
+            <Button Content="Download" Width="140" Margin="0,0,8,0" Click="Download_Click" x:Name="DownloadButton" IsEnabled="False"/>
+            <Button Content="Open Release Notes" Width="170" Click="OpenNotes_Click" IsEnabled="False" x:Name="NotesButton"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" Padding="16">
+            <StackPanel>
+                <TextBlock Text="Current Version" FontWeight="Bold"/>
+                <TextBlock x:Name="CurrentVersionText" Margin="0,0,0,12"/>
+                <Separator Margin="0,0,0,12"/>
+                <TextBlock Text="Latest Release" FontWeight="Bold"/>
+                <TextBlock x:Name="LatestVersionText" Margin="0,0,0,4"/>
+                <TextBlock x:Name="ReleaseDateText" Margin="0,0,0,12" Foreground="{StaticResource TextMutedBrush}"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="200">
+                    <TextBlock x:Name="ReleaseNotes" TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText" Foreground="{StaticResource TextMutedBrush}" Margin="0,12,0,0"/>
+    </Grid>
+</UserControl>

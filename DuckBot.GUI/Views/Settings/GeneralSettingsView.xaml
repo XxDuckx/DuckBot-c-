@@ -1,44 +1,44 @@
-﻿<UserControl x:Class="DuckBot.GUI.Views.Settings.GeneralSettingsView"
+<UserControl x:Class="DuckBot.GUI.Views.Settings.GeneralSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="#1e1e1e" Foreground="White">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="10" Orientation="Vertical">
-            <TextBlock Text="General Settings" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+        <StackPanel Margin="24" Orientation="Vertical">
+            <TextBlock Text="General Settings" FontWeight="Bold" FontSize="18" Margin="0,0,0,16"/>
 
             <!-- Emulator selection -->
             <StackPanel Orientation="Horizontal" Margin="0,4">
-                <TextBlock Text="Emulator:" Width="220"/>
-                <ComboBox x:Name="EmulatorSelect" Width="180">
+                <TextBlock Text="Emulator:" Width="220" VerticalAlignment="Center"/>
+                <ComboBox x:Name="EmulatorSelect" Width="200">
                     <ComboBoxItem Content="LDPlayer 9"/>
                     <ComboBoxItem Content="LDPlayer 5"/>
                 </ComboBox>
             </StackPanel>
 
             <!-- Toggles -->
-            <CheckBox x:Name="AskOnStart" Content="Ask which emulator to run on start" Margin="0,4"/>
-            <CheckBox x:Name="RestartOnBoot" Content="Restart game on first boot" Margin="0,4"/>
-            <CheckBox x:Name="AutoSignIn" Content="Auto sign-in with last account" Margin="0,4"/>
-            <CheckBox x:Name="ClearCache" Content="Clear temp cache regularly (recommended on slow PCs)" Margin="0,4"/>
-            <CheckBox x:Name="CloseOnStop" Content="Close emulators when bot stops" Margin="0,4"/>
+            <CheckBox x:Name="AskOnStart" Content="Ask which emulator to run on start"/>
+            <CheckBox x:Name="RestartOnBoot" Content="Restart game on first boot"/>
+            <CheckBox x:Name="AutoSignIn" Content="Auto sign-in with last account"/>
+            <CheckBox x:Name="ClearCache" Content="Clear temp cache regularly (recommended on slow PCs)"/>
+            <CheckBox x:Name="CloseOnStop" Content="Close emulators when bot stops"/>
 
             <!-- Theme -->
             <StackPanel Orientation="Horizontal" Margin="0,8">
-                <TextBlock Text="Theme:" Width="220"/>
-                <ComboBox x:Name="ThemeSelect" Width="180">
+                <TextBlock Text="Theme:" Width="220" VerticalAlignment="Center"/>
+                <ComboBox x:Name="ThemeSelect" Width="200">
                     <ComboBoxItem Content="Dark"/>
                     <ComboBoxItem Content="Light"/>
                 </ComboBox>
             </StackPanel>
 
-            <CheckBox x:Name="AutoSave" Content="Auto-save configs on menu close" Margin="0,4"/>
+            <CheckBox x:Name="AutoSave" Content="Auto-save configs on menu close"/>
 
-            <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
-                <Button Content="Download Bot Manager Tool" Width="220" Margin="0,0,10,0"/>
-                <Button Content="Clear All Cooldowns" Width="180"/>
+            <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                <Button Content="Download Bot Manager Tool" Width="240" Margin="0,0,12,0" Click="DownloadTool_Click"/>
+                <Button Content="Clear All Cooldowns" Width="200" Click="ClearCooldowns_Click"/>
             </StackPanel>
 
-            <Button x:Name="SaveButton" Content="Save" Width="100" Margin="0,15,0,0" HorizontalAlignment="Right"/>
+            <Button x:Name="SaveButton" Content="Save" Width="120" Margin="0,20,0,0"
+                    HorizontalAlignment="Right" Click="SaveButton_Click"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

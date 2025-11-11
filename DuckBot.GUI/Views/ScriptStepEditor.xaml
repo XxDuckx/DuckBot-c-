@@ -1,12 +1,24 @@
-﻿<Window x:Class="DuckBot.GUI.Views.ScriptStepEditor"
+<Window x:Class="DuckBot.GUI.Views.ScriptStepEditor"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Edit Step" Height="400" Width="400">
-    <Grid Margin="10">
-        <StackPanel>
-            <TextBlock Text="Step Editor" FontWeight="Bold" Margin="0,0,0,8"/>
-            <TextBox x:Name="ParamBox" Height="200" TextWrapping="Wrap"
-                     AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-            <Button Content="Save" Width="100" HorizontalAlignment="Right" Margin="0,8,0,0"/>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Step" Height="420" Width="420"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Step Parameters" FontWeight="Bold" FontSize="16"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,12,0,12">
+            <StackPanel x:Name="EditorPanel"/>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Save" Width="110" Margin="0,0,8,0" Click="Save_Click" Style="{StaticResource AccentButtonStyle}"/>
+            <Button Content="Cancel" Width="100" Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>

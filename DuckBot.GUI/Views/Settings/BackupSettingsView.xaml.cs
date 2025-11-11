@@ -34,7 +34,7 @@ namespace DuckBot.GUI.Views.Settings
         {
             if (File.Exists(BackupPath.Text))
             {
-                BackupService.RestoreBackup(BackupPath.Text);
+                BackupService.RestoreBackup(BackupPath.Text, HardRestore.IsChecked == true);
                 MessageBox.Show("Backup restored successfully.", "DuckBot");
             }
             else
