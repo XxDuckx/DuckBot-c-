@@ -31,6 +31,7 @@ namespace DuckBot.GUI.Views.Settings
             s.GameLoadingSolver = GameLoading.IsChecked == true;
             s.MessageSolver = MessageSolver.IsChecked == true;
             SettingsManager.Save();
+            SolverService.ApplySettings(s);
             MessageBox.Show("Solver settings saved.", "DuckBot");
         }
     }

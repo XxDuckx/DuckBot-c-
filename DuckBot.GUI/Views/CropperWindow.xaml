@@ -1,8 +1,34 @@
 ﻿<Window x:Class="DuckBot.GUI.Views.CropperWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Crop Image" Height="600" Width="800">
-    <Grid>
-        <Image x:Name="SourceImage" Stretch="Uniform"/>
-        <!-- TODO: Add cropping overlay -->
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Crop Image" Height="620" Width="880"
+        WindowStartupLocation="CenterOwner">
+    <Grid Background="{StaticResource ApplicationBackgroundBrush}" Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" ClipToBounds="True">
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="{StaticResource PanelCornerRadius}">
+                <Image x:Name="SourceImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <Canvas x:Name="OverlayCanvas" Background="Transparent"
+                    MouseLeftButtonDown="OverlayCanvas_MouseLeftButtonDown"
+                    MouseMove="OverlayCanvas_MouseMove"
+                    MouseLeftButtonUp="OverlayCanvas_MouseLeftButtonUp">
+                <Rectangle x:Name="SelectionRect"
+                           Stroke="{StaticResource AccentBrush}"
+                           StrokeThickness="2"
+                           Fill="{StaticResource SelectionFillBrush}"
+                           Visibility="Collapsed"/>
+            </Canvas>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <TextBlock x:Name="SelectionInfo" VerticalAlignment="Center" Margin="0,0,16,0"/>
+            <Button Content="Save Crop" Width="120" Margin="0,0,8,0" Click="Save_Click" Style="{StaticResource AccentButtonStyle}"/>
+            <Button Content="Cancel" Width="110" Click="Cancel_Click"/>
+        </StackPanel>
     </Grid>
 </Window>

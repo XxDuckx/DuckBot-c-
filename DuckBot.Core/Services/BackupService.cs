@@ -12,9 +12,13 @@ namespace DuckBot.Core.Services
             ZipFile.CreateFromDirectory("data", targetPath);
         }
 
-        public static void RestoreBackup(string zipPath)
+        public static void RestoreBackup(string zipPath, bool hardRestore)
         {
             if (!File.Exists(zipPath)) return;
+            if (hardRestore && Directory.Exists("data"))
+            {
+                Directory.Delete("data", recursive: true);
+            }
             ZipFile.ExtractToDirectory(zipPath, "data", overwriteFiles: true);
         }
 

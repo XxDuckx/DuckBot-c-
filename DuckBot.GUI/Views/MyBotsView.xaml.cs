@@ -176,5 +176,38 @@ namespace DuckBot.GUI.Views
                 }
             }
         }
+
+        private void PlayBot_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is BotProfile bot)
+            {
+                if (string.IsNullOrWhiteSpace(bot.Instance))
+                {
+                    MessageBox.Show("Assign an instance before starting this bot.", "DuckBot");
+                    return;
+                }
+                if (BotRunnerService.IsRunning(bot.Id))
+                {
+                    MessageBox.Show("This bot is already running.", "DuckBot");
+                    return;
+                }
+                BotRunnerService.Start(bot);
+                LogService.Info($"Started bot {bot.Name}");
+            }
+        }
+
+        private void StopBot_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is BotProfile bot)
+            {
+                if (!BotRunnerService.IsRunning(bot.Id))
+                {
+                    MessageBox.Show("This bot is not currently running.", "DuckBot");
+                    return;
+                }
+                BotRunnerService.Stop(bot);
+                LogService.Info($"Stopped bot {bot.Name}");
+            }
+        }
     }
 }

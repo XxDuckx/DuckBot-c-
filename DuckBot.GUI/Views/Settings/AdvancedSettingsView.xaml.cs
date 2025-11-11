@@ -24,6 +24,7 @@ namespace DuckBot.GUI.Views.Settings
             RemoveCooldown.IsChecked = s.RemoveCooldownScripts;
             CloseUnused.IsChecked = s.CloseUnusedEmulators;
             DelayBox.Text = s.ConditionCheckDelayMs.ToString();
+            ManifestUrl.Text = s.UpdateManifestUrl;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -38,6 +39,7 @@ namespace DuckBot.GUI.Views.Settings
             s.RemoveCooldownScripts = RemoveCooldown.IsChecked == true;
             s.CloseUnusedEmulators = CloseUnused.IsChecked == true;
             if (int.TryParse(DelayBox.Text, out int val)) s.ConditionCheckDelayMs = val;
+            if (!string.IsNullOrWhiteSpace(ManifestUrl.Text)) s.UpdateManifestUrl = ManifestUrl.Text;
             SettingsManager.Save();
             MessageBox.Show("Advanced settings saved.", "DuckBot");
         }

@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:DuckBot.GUI.Views"
         Title="DuckBot" Height="720" Width="1100"
-        Background="#1e1e1e" Foreground="White">
-    <Grid>
-        <TabControl x:Name="Tabs" Background="#1e1e1e" BorderThickness="0">
+        WindowStartupLocation="CenterScreen">
+    <Grid Background="{StaticResource ApplicationBackgroundBrush}">
+        <TabControl x:Name="Tabs">
             <TabItem Header="My Bots">
                 <v:MyBotsView/>
             </TabItem>
@@ -13,19 +13,17 @@
                 <v:LogsView/>
             </TabItem>
             <TabItem Header="Script Builder">
-                <TextBlock Margin="16" Text="Script Builder (todo)"/>
+                <v:ScriptBuilderView/>
             </TabItem>
             <TabItem Header="Live Runner">
                 <v:LiveRunnerView/>
             </TabItem>
             <TabItem Header="Settings">
-                <TextBlock Margin="16" Text="Settings (todo)"/>
+                <v:SettingsView/>
             </TabItem>
             <TabItem Header="Updates">
-                <TextBlock Margin="16" Text="Updates (todo)"/>
+                <v:UpdatesView/>
             </TabItem>
         </TabControl>
-
-
     </Grid>
 </Window>

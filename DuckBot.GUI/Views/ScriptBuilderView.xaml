@@ -1,23 +1,26 @@
 ﻿<UserControl x:Class="DuckBot.GUI.Views.ScriptBuilderView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="#1e1e1e" Foreground="White">
-    <Grid Margin="10">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <ComboBox x:Name="GameSelect" Width="150" Margin="0,0,8,0"/>
-            <Button Content="New" Width="70" Margin="0,0,8,0"/>
-            <Button Content="Load" Width="70" Margin="0,0,8,0"/>
-            <Button Content="Save" Width="70" Margin="0,0,8,0"/>
-            <Button Content="Export JS" Width="100" Margin="0,0,8,0"/>
-            <Button Content="Test Run" Width="100" Margin="0,0,8,0"/>
-            <Button Content="Capture Screenshot" Width="150" Margin="0,0,8,0"/>
-            <Button Content="Crop from Screenshot" Width="170"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <ComboBox x:Name="GameSelect" Width="180" Margin="0,0,8,0"
+                      SelectionChanged="GameSelect_SelectionChanged"/>
+            <ComboBox x:Name="ScriptSelect" Width="220" Margin="0,0,8,0"
+                      SelectionChanged="ScriptSelect_SelectionChanged"/>
+            <Button Content="New" Width="80" Margin="0,0,8,0" Click="New_Click"/>
+            <Button Content="Save" Width="80" Margin="0,0,8,0" Click="Save_Click"/>
+            <Button Content="Save As" Width="90" Margin="0,0,8,0" Click="SaveAs_Click"/>
+            <Button Content="Export JS" Width="110" Margin="0,0,8,0" Click="Export_Click"/>
+            <Button Content="Test Run" Width="110" Margin="0,0,8,0" Click="TestRun_Click"/>
+            <Button Content="Capture Screenshot" Width="170" Margin="0,0,8,0" Click="Capture_Click"/>
+            <Button Content="Pick Coordinates" Width="160" Click="PickCoords_Click"/>
         </StackPanel>
 
         <!-- Main Panels -->
@@ -29,18 +32,47 @@
             </Grid.ColumnDefinitions>
 
             <!-- Actions Library -->
-            <ListBox x:Name="ActionsLibrary" Grid.Column="0" Background="#252525" BorderBrush="#333"
-                     Margin="0,0,8,0"/>
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" Padding="8" Margin="0,0,12,0">
+                <DockPanel>
+                    <TextBlock Text="Actions" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,8"/>
+                    <ListBox x:Name="ActionsLibrary" MouseDoubleClick="ActionsLibrary_DoubleClick"
+                             AllowDrop="False"/>
+                </DockPanel>
+            </Border>
 
             <!-- Step Sequence -->
-            <ListBox x:Name="StepSequence" Grid.Column="1" Background="#1e1e1e" BorderBrush="#333"
-                     Margin="0,0,8,0" />
+            <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" Padding="8" Margin="0,0,12,0">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Sequence" FontWeight="Bold" Margin="0,0,8,0"/>
+                        <Button Content="Remove" Width="80" Margin="0,0,8,0" Click="RemoveStep_Click"/>
+                        <Button Content="Move Up" Width="90" Margin="0,0,8,0" Click="MoveUp_Click"/>
+                        <Button Content="Move Down" Width="90" Click="MoveDown_Click"/>
+                    </StackPanel>
+                    <ListBox x:Name="StepSequence" DisplayMemberPath="Summary"
+                             SelectionChanged="StepSequence_SelectionChanged"
+                             AllowDrop="True"
+                             PreviewMouseLeftButtonDown="StepSequence_PreviewMouseLeftButtonDown"
+                             PreviewMouseMove="StepSequence_PreviewMouseMove"
+                             Drop="StepSequence_Drop"/>
+                </DockPanel>
+            </Border>
 
             <!-- Step Inspector -->
-            <StackPanel x:Name="Inspector" Grid.Column="2" Background="#252525" BorderBrush="#333">
-                <TextBlock Text="Step Inspector" FontWeight="Bold" Margin="8"/>
-                <!-- Dynamic controls added at runtime -->
-            </StackPanel>
+            <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}" Padding="12">
+                <StackPanel x:Name="Inspector">
+                    <TextBlock Text="Step Inspector" FontWeight="Bold" Margin="0,0,0,12"/>
+                    <StackPanel x:Name="InspectorContent"/>
+                    <Separator Margin="0,12,0,12"/>
+                    <StackPanel Orientation="Vertical" x:Name="VariableEditor">
+                        <TextBlock Text="Variables" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <StackPanel x:Name="VariablesHost"/>
+                        <Button Content="Add Variable" Margin="0,12,0,0" Click="AddVariable_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText" Foreground="{StaticResource TextMutedBrush}" Margin="0,12,0,0"/>
     </Grid>
 </UserControl>

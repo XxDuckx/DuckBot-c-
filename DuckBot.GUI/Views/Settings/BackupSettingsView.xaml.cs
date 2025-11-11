@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -34,7 +35,7 @@ namespace DuckBot.GUI.Views.Settings
         {
             if (File.Exists(BackupPath.Text))
             {
-                BackupService.RestoreBackup(BackupPath.Text);
+                BackupService.RestoreBackup(BackupPath.Text, HardRestore.IsChecked == true);
                 MessageBox.Show("Backup restored successfully.", "DuckBot");
             }
             else

@@ -11,5 +11,6 @@
         public bool RemoveCooldownScripts { get; set; } = false;
         public bool CloseUnusedEmulators { get; set; } = false;
         public int ConditionCheckDelayMs { get; set; } = 200;
+        public string UpdateManifestUrl { get; set; } = "https://updates.duckbot.app/manifest.json";
     }
 }
