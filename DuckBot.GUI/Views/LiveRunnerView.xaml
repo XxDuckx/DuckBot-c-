@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="DuckBot.GUI.Views.LiveRunnerView"
+<UserControl x:Class="DuckBot.GUI.Views.LiveRunnerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Margin="16">

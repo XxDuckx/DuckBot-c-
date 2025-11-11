@@ -1,4 +1,4 @@
-﻿<Window x:Class="DuckBot.GUI.Views.ScriptStepEditor"
+<Window x:Class="DuckBot.GUI.Views.ScriptStepEditor"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Edit Step" Height="420" Width="420"
