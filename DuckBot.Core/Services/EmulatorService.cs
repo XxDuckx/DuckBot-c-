@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.ComponentModel;
 using DuckBot.Core.Emu;
 using DuckBot.Core.Logging;
 
@@ -28,6 +29,7 @@ namespace DuckBot.Core.Services
         private List<EmulatorInstall> _installs = new();
         private List<EmulatorInstance> _instances = new();
         private DateTime _lastRefresh = DateTime.MinValue;
+        private readonly HashSet<string> _missingInstalls = new(StringComparer.OrdinalIgnoreCase);
 
         public EmulatorService(IEmulatorDetector detector, IAppLogger logger)
         {
@@ -232,6 +234,14 @@ namespace DuckBot.Core.Services
 
             return candidates.FirstOrDefault(File.Exists) ?? candidates.Last();
         }
+        private void LogMissingInstall(string path, string resource)
+        {
+            if (_missingInstalls.Add($"{path}|{resource}"))
+            {
+                _logger.Warn($"LDPlayer installation at '{path}' skipped: missing {resource}.");
+            }
+        }
+
 
         private async Task<List<EmulatorInstance>> QueryInstancesAsync(EmulatorInstall install, CancellationToken cancellationToken)
         {
@@ -353,9 +363,20 @@ namespace DuckBot.Core.Services
         private static async Task<(bool Success, string Output, string Error, byte[] Data)> RunProcessAsync(ProcessStartInfo psi, bool captureOutput, CancellationToken cancellationToken, bool captureBinary = false)
         {
             using var process = new Process { StartInfo = psi, EnableRaisingEvents = false };
-            if (!process.Start())
+            try
             {
-                return (false, string.Empty, "Failed to start process.", Array.Empty<byte>());
+                if (!process.Start())
+                {
+                    return (false, string.Empty, "Failed to start process.", Array.Empty<byte>());
+                }
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 740)
+            {
+                return (false, string.Empty, "The requested operation requires elevation. Configure LDPlayer to run without administrator privileges.", Array.Empty<byte>());
+            }
+            catch (Win32Exception ex)
+            {
+                return (false, string.Empty, ex.Message, Array.Empty<byte>());
             }
 
             cancellationToken.ThrowIfCancellationRequested();

@@ -1,158 +1,59 @@
 <Window x:Class="DuckBot.GUI.Views.BotEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Bot Editor" Height="640" Width="900"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="16">
+        Title="Bot Editor" Height="520" Width="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-            <TextBlock Text="Name" VerticalAlignment="Center"/>
-            <TextBox Text="{Binding Bot.Name, UpdateSourceTrigger=PropertyChanged}"
-                     Width="220" Margin="8,0,0,0"/>
-            <TextBlock Text="Game" Margin="16,0,0,0" VerticalAlignment="Center"/>
-            <ComboBox Width="200" SelectedItem="{Binding Bot.Game}" Margin="8,0,0,0">
-                <ComboBoxItem Content="West Game"/>
-                <ComboBoxItem Content="State of Survival"/>
-            </ComboBox>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="Script name:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox Width="300" Text="{Binding Script.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </StackPanel>
 
-        <!-- Tabbed editor -->
-        <TabControl Grid.Row="1">
-            <!-- Scripts tab -->
-            <TabItem Header="Scripts">
-                <Grid Margin="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="3*"/>
-                    </Grid.ColumnDefinitions>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                    <!-- Script list -->
-                    <Border Background="{StaticResource SurfaceBrush}" Padding="8">
-                        <ListView x:Name="ScriptsList"
-                                  ItemsSource="{Binding Bot.Scripts}"
-                                  SelectionMode="Single">
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Enabled}" Margin="0,0,6,0"/>
-                                        <TextBox Text="{Binding Name}" Width="200" Margin="0,0,6,0"/>
-                                        <Button Content="Vars" Width="70" Click="EditVars_Click"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </Border>
-
-                    <!-- Template side controls -->
-                    <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                        <TextBlock Text="Templates" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button Content="Add Script" Width="120" Margin="0,0,8,0" Click="AddScript_Click"/>
-                            <Button Content="Remove Selected" Width="150" Click="RemoveScript_Click"/>
-                        </StackPanel>
-                        <TextBlock Margin="0,12,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}"
-                                   Text="(Future: per-script UI like your LSSBot settings)"/>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-
-            <!-- Emulators / Accounts tab -->
-            <TabItem Header="Emulators / Accounts">
-                <Grid Margin="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Accounts (per bot, rotates if enabled later)" Margin="0,0,0,8"/>
-                    <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" Padding="4">
-                        <DataGrid ItemsSource="{Binding Bot.Accounts}"
-                                  AutoGenerateColumns="False">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="*"/>
-                                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
-                                <DataGridTextColumn Header="PIN" Binding="{Binding Pin}" Width="*"/>
-                                <DataGridCheckBoxColumn Header="Active" Binding="{Binding Active}" Width="Auto"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Border>
-                </Grid>
-            </TabItem>
-
-            <!-- Other settings -->
-            <TabItem Header="Other Settings">
-                <StackPanel Margin="12">
-                    <CheckBox Content="Ignore cooldowns"
-                              IsChecked="{Binding Bot.Settings.IgnoreCooldowns}"
-                              Margin="0,0,0,8"/>
-                    <CheckBox Content="Stop instance after full loop"
-                              IsChecked="{Binding Bot.Settings.StopInstanceAfterLoop}"/>
-                </StackPanel>
-            </TabItem>
-
-            <!-- Mail Login -->
-            <TabItem Header="Mail Login">
-                <Grid Margin="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="3*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="Account Library" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <Border Background="{StaticResource SurfaceBrush}" Padding="4">
-                            <DataGrid x:Name="AccountLibraryGrid"
-                                      ItemsSource="{Binding MailAccounts}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      Margin="0">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="2*"/>
-                                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="3*"/>
-                                    <DataGridTextColumn Header="Password" Binding="{Binding Password}" Width="2*"/>
-                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                            <Button Content="Add Account" Width="120" Margin="0,0,8,0" Click="AddAccount_Click"/>
-                            <Button Content="Remove Selected" Width="140" Margin="0,0,8,0" Click="RemoveAccount_Click"/>
-                            <Button Content="Save Accounts" Width="130" Click="SaveAccounts_Click"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Bot Account Rotation" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <Border Background="{StaticResource SurfaceBrush}" Padding="8">
-                            <StackPanel>
-                                <ListBox x:Name="BotAccountsList"
-                                         ItemsSource="{Binding Bot.Accounts}"
-                                         DisplayMemberPath="Email"
-                                         Height="180"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <Button Content="Assign from Library" Width="150" Margin="0,0,8,0" Click="AssignAccount_Click"/>
-                                    <Button Content="Remove" Width="100" Click="RemoveBotAccount_Click"/>
+            <!-- Left: variables editor -->
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" Padding="8" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="Variables" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <ItemsControl ItemsSource="{Binding Script.Variables}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox Width="140" Text="{Binding Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Width="200" Margin="8,0,8,0" Text="{Binding Default, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button Content="Remove" Width="80" Command="{Binding DataContext.RemoveVariableCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                 </StackPanel>
-                                <TextBlock Text="Accounts rotate sequentially when the bot supports rotation." Margin="0,12,0,0" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-        </TabControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-        <!-- Bottom buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal"
-                    HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Save" Width="110" Margin="0,0,12,0" Click="Save_Click"
-                    Style="{StaticResource AccentButtonStyle}"/>
-            <Button Content="Cancel" Width="110" Click="Cancel_Click"/>
+                    <Button Content="Add variable" Width="120" Margin="0,12,0,0" Command="{Binding AddVariableCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Right: quick JSON preview -->
+            <Border Grid.Column="1" Background="{StaticResource SurfaceAltBrush}" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="Script JSON Preview" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBox Text="{Binding ScriptJsonPreview}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" IsReadOnly="True" Height="360" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Save" Width="100" Margin="0,0,8,0" Click="Save_Click"/>
+            <Button Content="Close" Width="100" Click="Close_Click"/>
         </StackPanel>
     </Grid>
 </Window>

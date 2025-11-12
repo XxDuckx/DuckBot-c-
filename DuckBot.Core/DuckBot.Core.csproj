@@ -5,9 +5,12 @@
 		<UseWPF>true</UseWPF>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="OpenCvSharp4.Windows" Version="4.11.0.20250507" />
 		<PackageReference Include="Tesseract" Version="5.2.0" />
 	</ItemGroup>

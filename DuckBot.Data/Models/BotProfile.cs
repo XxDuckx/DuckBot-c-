@@ -11,6 +11,7 @@ namespace DuckBot.Data.Models
         public List<ScriptSetting> Scripts { get; set; } = new();
         public List<AccountProfile> Accounts { get; set; } = new();
         public BotSettings Settings { get; set; } = new();
+        public List<InstanceBinding> InstanceBindings { get; set; } = new();
     }
 
     public class ScriptSetting
@@ -32,5 +33,10 @@ namespace DuckBot.Data.Models
     {
         public bool IgnoreCooldowns { get; set; } = false;
         public bool StopInstanceAfterLoop { get; set; } = false;
+    }
+    public class InstanceBinding
+    {
+        public string InstanceName { get; set; } = string.Empty;
+        public string? AccountId { get; set; }
     }
 }

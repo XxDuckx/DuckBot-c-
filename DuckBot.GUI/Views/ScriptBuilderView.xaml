@@ -9,18 +9,22 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-            <ComboBox x:Name="GameSelect" Width="180" Margin="0,0,8,0"
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12" HorizontalAlignment="Stretch">
+            <ComboBox x:Name="GameSelect" Width="200" Margin="0,0,12,0"
+                      ToolTip="Select the game whose scripts you want to edit"
                       SelectionChanged="GameSelect_SelectionChanged"/>
-            <ComboBox x:Name="ScriptSelect" Width="220" Margin="0,0,8,0"
+            <ComboBox x:Name="ScriptSelect" Width="260" Margin="0,0,12,0"
+                      ToolTip="Choose an existing script to load"
                       SelectionChanged="ScriptSelect_SelectionChanged"/>
-            <Button Content="New" Width="80" Margin="0,0,8,0" Click="New_Click"/>
-            <Button Content="Save" Width="80" Margin="0,0,8,0" Click="Save_Click"/>
-            <Button Content="Save As" Width="90" Margin="0,0,8,0" Click="SaveAs_Click"/>
-            <Button Content="Export JS" Width="110" Margin="0,0,8,0" Click="Export_Click"/>
-            <Button Content="Test Run" Width="110" Margin="0,0,8,0" Click="TestRun_Click"/>
-            <Button Content="Capture Screenshot" Width="170" Margin="0,0,8,0" Click="Capture_Click"/>
-            <Button Content="Pick Coordinates" Width="160" Click="PickCoords_Click"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="New" Width="90" Margin="0,0,8,0" Click="New_Click"/>
+                <Button Content="Save" Width="90" Margin="0,0,8,0" Click="Save_Click"/>
+                <Button Content="Save As" Width="110" Margin="0,0,8,0" Click="SaveAs_Click"/>
+                <Button Content="Export JS" Width="130" Margin="0,0,8,0" Click="Export_Click"/>
+                <Button Content="Test Run" Width="130" Margin="0,0,8,0" Click="TestRun_Click"/>
+                <Button Content="Capture Screenshot" Width="190" Margin="0,0,8,0" Click="Capture_Click"/>
+                <Button Content="Pick Coordinates" Width="170" Click="PickCoords_Click"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Main Panels -->
@@ -32,22 +36,44 @@
             </Grid.ColumnDefinitions>
 
             <!-- Actions Library -->
-            <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" Padding="8" Margin="0,0,12,0">
+            <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" Padding="12" Margin="0,0,12,0">
                 <DockPanel>
-                    <TextBlock Text="Actions" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,8"/>
+                    <TextBlock Text="Action Templates" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,12"/>
                     <ListBox x:Name="ActionsLibrary" MouseDoubleClick="ActionsLibrary_DoubleClick"
-                             AllowDrop="False"/>
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             AllowDrop="False">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}" FontSize="13" Margin="2"
+                                           TextWrapping="Wrap" ToolTip="{Binding Description}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,4"/>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                                <GroupStyle.Panel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel />
+                                    </ItemsPanelTemplate>
+                                </GroupStyle.Panel>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
+                    </ListBox>
                 </DockPanel>
             </Border>
 
             <!-- Step Sequence -->
-            <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" Padding="8" Margin="0,0,12,0">
+            <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" Padding="12" Margin="0,0,12,0">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
                         <TextBlock Text="Sequence" FontWeight="Bold" Margin="0,0,8,0"/>
-                        <Button Content="Remove" Width="80" Margin="0,0,8,0" Click="RemoveStep_Click"/>
-                        <Button Content="Move Up" Width="90" Margin="0,0,8,0" Click="MoveUp_Click"/>
-                        <Button Content="Move Down" Width="90" Click="MoveDown_Click"/>
+                        <Button Content="Remove" Width="90" Margin="0,0,8,0" Click="RemoveStep_Click"/>
+                        <Button Content="Move Up" Width="100" Margin="0,0,8,0" Click="MoveUp_Click"/>
+                        <Button Content="Move Down" Width="110" Click="MoveDown_Click"/>
                     </StackPanel>
                     <ListBox x:Name="StepSequence" DisplayMemberPath="Summary"
                              SelectionChanged="StepSequence_SelectionChanged"
@@ -59,15 +85,15 @@
             </Border>
 
             <!-- Step Inspector -->
-            <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}" Padding="12">
+            <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}" Padding="16">
                 <StackPanel x:Name="Inspector">
                     <TextBlock Text="Step Inspector" FontWeight="Bold" Margin="0,0,0,12"/>
                     <StackPanel x:Name="InspectorContent"/>
-                    <Separator Margin="0,12,0,12"/>
+                    <Separator Margin="0,16,0,16"/>
                     <StackPanel Orientation="Vertical" x:Name="VariableEditor">
                         <TextBlock Text="Variables" FontWeight="Bold" Margin="0,0,0,8"/>
                         <StackPanel x:Name="VariablesHost"/>
-                        <Button Content="Add Variable" Margin="0,12,0,0" Click="AddVariable_Click"/>
+                        <Button Content="Add Variable" Margin="0,12,0,0" Width="140" Click="AddVariable_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
