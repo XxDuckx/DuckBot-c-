@@ -1,27 +1,30 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using DuckBot.Core.Emu;
+﻿using DuckBot.Core.Emu;
+using DuckBot.Core.Logging;
 using DuckBot.Core.Services;
 using DuckBot.Scripting;
 using OpenCvSharp;
+using System;
+using System.IO;
+using System.Threading;
 using Tesseract;
 using CvRect = OpenCvSharp.Rect;
-using TessRect = Tesseract.Rect;
-
 
 namespace DuckBot.Core.Scripting
 {
     public sealed class OcrBridge : IScriptBridge, IDisposable
     {
         private readonly string _instance;
+        private readonly IAdbService _adbService;
+        private readonly IAppLogger _logger;
         private readonly Lazy<TesseractEngine?> _engine;
 
         public string Name => "ocr";
 
-        public OcrBridge(string instance)
+        public OcrBridge(string instance, IAdbService adbService, IAppLogger logger)
         {
             _instance = instance;
+            _adbService = adbService;
+            _logger = logger;
             _engine = new Lazy<TesseractEngine?>(CreateEngine, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
@@ -50,15 +53,18 @@ namespace DuckBot.Core.Scripting
             }
             catch (Exception ex)
             {
-                LogService.Error($"[{_instance}] OCR failed: {ex.Message}");
+                _logger.Error($"[{_instance}] OCR failed: {ex.Message}");
                 return string.Empty;
             }
         }
 
         private Mat? CaptureFrame()
         {
-            if (!AdbService.CaptureRawScreenshot(_instance, out var data) || data.Length == 0)
+            var (success, data) = _adbService.CaptureRawScreenshotAsync(_instance).ConfigureAwait(false).GetAwaiter().GetResult();
+            if (!success || data.Length == 0)
+            {
                 return null;
+            }
 
             try
             {
@@ -66,7 +72,7 @@ namespace DuckBot.Core.Scripting
             }
             catch (Exception ex)
             {
-                LogService.Error($"[{_instance}] Failed to decode screenshot: {ex.Message}");
+                _logger.Error($"[{_instance}] Failed to decode screenshot: {ex.Message}");
                 return null;
             }
         }
@@ -80,13 +86,13 @@ namespace DuckBot.Core.Scripting
                 Directory.CreateDirectory(tessData);
                 if (Directory.GetFiles(tessData, "*.traineddata").Length == 0)
                 {
-                    LogService.Warn("No tessdata language files found. Place traineddata files in /data/ocr/tessdata for OCR support.");
+                    _logger.Warn("No tessdata language files found. Place traineddata files in /data/ocr/tessdata for OCR support.");
                 }
                 return new TesseractEngine(tessData, "eng", EngineMode.Default);
             }
             catch (Exception ex)
             {
-                LogService.Error($"Failed to initialise OCR engine: {ex.Message}");
+                _logger.Error($"Failed to initialise OCR engine: {ex.Message}");
                 return null;
             }
         }

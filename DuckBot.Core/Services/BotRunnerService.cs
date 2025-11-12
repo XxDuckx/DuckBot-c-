@@ -1,114 +1,154 @@
-﻿using DuckBot.Core.Scripting;
-using DuckBot.Data.Scripts;
+﻿using DuckBot.Core.Emu;
+using DuckBot.Core.Logging;
+using DuckBot.Core.Scripting;
+using DuckBot.Core.Services;
 using DuckBot.Data.Models;
 using DuckBot.Data.Scripts;
 using DuckBot.Scripting;
 using DuckBot.Scripting.Bridges;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO;
-
 
 namespace DuckBot.Core.Services
 {
-    public static class BotRunnerService
+    public sealed class BotRunnerService : IBotRunnerService
     {
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> _running = new();
-        private static readonly ConcurrentDictionary<string, string> _status = new(); // botId -> status
+        private readonly IAppLogger _logger;
+        private readonly IAdbService _adbService;
+        private readonly ConcurrentDictionary<string, RunningBot> _running = new();
+        private readonly ConcurrentDictionary<string, string> _status = new();
 
-        public static bool IsRunning(string botId) => _running.ContainsKey(botId);
-        public static string GetStatus(string botId) => _status.TryGetValue(botId, out var s) ? s : "Idle";
+        private sealed record RunningBot(Task Execution, CancellationTokenSource Cancellation);
 
-        public static void Start(BotProfile bot)
+        public BotRunnerService(IAppLogger logger, IAdbService adbService)
         {
-            if (_running.ContainsKey(bot.Id)) return;
+            _logger = logger;
+            _adbService = adbService;
+        }
+
+        public bool IsRunning(string botId) => _running.ContainsKey(botId);
+
+        public string GetStatus(string botId) => _status.TryGetValue(botId, out var status) ? status : "Idle";
+
+        public IReadOnlyDictionary<string, string> StatusSnapshot() => new Dictionary<string, string>(_status);
+
+        public Task StartAsync(BotProfile bot)
+        {
+            if (bot == null) throw new ArgumentNullException(nameof(bot));
+
             if (string.IsNullOrWhiteSpace(bot.Instance))
             {
-                LogService.Warn($"Bot '{bot.Name}' has no emulator instance assigned.");
-                return;
+                _logger.Warn($"Bot '{bot.Name}' has no emulator instance assigned.");
+                return Task.CompletedTask;
+            }
+
+            if (_running.ContainsKey(bot.Id))
+            {
+                _logger.Warn($"Bot '{bot.Name}' is already running.");
+                return Task.CompletedTask;
             }
 
             var cts = new CancellationTokenSource();
-            _running[bot.Id] = cts;
-            _status[bot.Id] = "Starting";
-
-            LogService.Info($"Starting bot '{bot.Name}' on {bot.Instance}");
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    using var ocr = new OcrBridge(bot.Instance);
-                    var engine = CreateEngine(bot, cts.Token, ocr);
-                    string script = LoadScriptFor(bot);
-                    _status[bot.Id] = "Running";
-                    await engine.RunAsync(script, cts.Token);
-                }
-                catch (TaskCanceledException) { /* normal stop */ }
-                catch (System.Exception ex)
-                {
-                    LogService.Error($"[{bot.Name}] crash: {ex.Message}");
-                }
-                finally
-                {
-                    _status[bot.Id] = "Idle";
-                    Stop(bot);
-                    LogService.Info($"Bot '{bot.Name}' stopped.");
-                }
-            }, cts.Token);
-        }
-
-        public static void Stop(BotProfile bot)
-        {
-            if (_running.TryRemove(bot.Id, out var cts))
+            var runningBot = new RunningBot(Task.Run(() => RunBotAsync(bot, cts.Token), cts.Token), cts);
+            if (!_running.TryAdd(bot.Id, runningBot))
             {
                 cts.Cancel();
+                return Task.CompletedTask;
+            }
+
+            _status[bot.Id] = "Starting";
+            _logger.Info($"Starting bot '{bot.Name}' on {bot.Instance}");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(BotProfile bot)
+        {
+            if (bot == null) throw new ArgumentNullException(nameof(bot));
+
+            if (_running.TryRemove(bot.Id, out var running))
+            {
+                running.Cancellation.Cancel();
+                running.Cancellation.Dispose();
+            }
+
+            _status[bot.Id] = "Stopping";
+            return Task.CompletedTask;
+        }
+
+        public Task StopAllAsync()
+        {
+            foreach (var kv in _running)
+            {
+                kv.Value.Cancellation.Cancel();
+                kv.Value.Cancellation.Dispose();
+            }
+
+            _running.Clear();
+            _status.Clear();
+            _logger.Info("All bots stopped.");
+            return Task.CompletedTask;
+        }
+
+        private async Task RunBotAsync(BotProfile bot, CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var ocr = new OcrBridge(bot.Instance, _adbService, _logger);
+                using var cv = new CvBridge(bot.Instance, bot.Game, _adbService, _logger);
+                var adbBridge = new AdbBridge(bot.Instance, bot.Name, _adbService, _logger);
+
+                var util = new Util(_logger.Info, () => cancellationToken);
+                var engine = new JsEngine(util, adbBridge, cv, ocr);
+                engine.OnPrint += message => _logger.Info($"[{bot.Name}] {message}");
+
+                string script = await LoadScriptForAsync(bot, cancellationToken).ConfigureAwait(false);
+                _status[bot.Id] = "Running";
+                await engine.RunAsync(script, cancellationToken).ConfigureAwait(false);
+                _logger.Info($"Bot '{bot.Name}' finished execution.");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.Info($"Bot '{bot.Name}' canceled.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"[{bot.Name}] crash: {ex.Message}");
+            }
+            finally
+            {
+                if (_running.TryRemove(bot.Id, out var running))
+                {
+                    running.Cancellation.Dispose();
+                }
+                _status[bot.Id] = "Idle";
             }
         }
 
-        public static void StopAll()
-        {
-            foreach (var kv in _running) kv.Value.Cancel();
-            _running.Clear();
-            _status.Clear();
-            LogService.Info("All bots stopped.");
-        }
-
-        private static JsEngine CreateEngine(BotProfile bot, CancellationToken token)
-            => CreateEngine(bot, token, null);
-
-        private static JsEngine CreateEngine(BotProfile bot, CancellationToken token, OcrBridge? sharedOcr)
-        {
-            var util = new Util(LogService.Info, () => token);
-            var adb = new AdbBridge(bot.Instance, bot.Name);
-            var cv = new CvBridge(bot.Instance, bot.Game);
-            var ocr = sharedOcr ?? new OcrBridge(bot.Instance);
-
-            var eng = new JsEngine(util, adb, cv, ocr);
-            eng.OnPrint += (s) => LogService.Info($"[{bot.Name}] {s}");
-            // future: add adb/cv/ocr bridges here
-            return eng;
-        }
-
-        private static string LoadScriptFor(BotProfile bot)
+        private async Task<string> LoadScriptForAsync(BotProfile bot, CancellationToken cancellationToken)
         {
             if (bot.Scripts is { Count: > 0 })
             {
-                var builder = new System.Text.StringBuilder();
+                var builder = new StringBuilder();
                 foreach (var scriptSetting in bot.Scripts)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!scriptSetting.Enabled) continue;
-                    string path = Path.Combine(ScriptIO.GetGameDirectory(bot.Game), $"{San(scriptSetting.Name)}.json");
+
+                    string path = Path.Combine(ScriptIO.GetGameDirectory(bot.Game), $"{Sanitize(scriptSetting.Name)}.json");
                     if (!File.Exists(path))
                     {
-                        LogService.Warn($"Script '{scriptSetting.Name}' not found for bot '{bot.Name}'.");
+                        _logger.Warn($"Script '{scriptSetting.Name}' not found for bot '{bot.Name}'.");
                         continue;
                     }
 
-                    var model = ScriptIO.Load(path);
-                    var vars = scriptSetting.Variables ?? new System.Collections.Generic.Dictionary<string, object>();
+                    var model = await ScriptIO.LoadAsync(path, cancellationToken).ConfigureAwait(false);
+                    var vars = scriptSetting.Variables ?? new Dictionary<string, object>();
                     builder.AppendLine(ScriptTranspiler.Transpile(model, vars));
                 }
 
@@ -116,21 +156,18 @@ namespace DuckBot.Core.Services
                     return builder.ToString();
             }
 
-            // fallback JS stub
-            return @"
-print('DuckBot JS runner online');
-for (let i=1;i<=5;i++){
-  print('Step ' + i);
-  util.sleep(1000);
-}
-print('Done.');
-";
+            return "print('DuckBot JS runner online');\nutil.sleep(1000);\nprint('Done.');";
         }
 
-        private static string San(string s)
+        private static string Sanitize(string value)
         {
-            foreach (var c in Path.GetInvalidFileNameChars()) s = s.Replace(c, '_');
-            return s.Trim();
+            foreach (var c in Path.GetInvalidFileNameChars())
+            {
+                value = value.Replace(c, '_');
+            }
+
+            return value.Trim();
         }
+
     }
 }

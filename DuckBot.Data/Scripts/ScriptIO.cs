@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using DuckBot.Data.Models;
 
 namespace DuckBot.Data.Scripts
@@ -21,6 +23,13 @@ namespace DuckBot.Data.Scripts
         {
             string json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ScriptModel>(json, Options) ?? new ScriptModel();
+        }
+
+        public static async Task<ScriptModel> LoadAsync(string path, CancellationToken cancellationToken = default)
+        {
+            await using var stream = File.OpenRead(path);
+            var model = await JsonSerializer.DeserializeAsync<ScriptModel>(stream, Options, cancellationToken).ConfigureAwait(false);
+            return model ?? new ScriptModel();
         }
 
         public static List<ScriptModel> LoadAllFromGame(string game)

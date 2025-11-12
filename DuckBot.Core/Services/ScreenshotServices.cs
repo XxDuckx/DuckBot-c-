@@ -2,7 +2,7 @@
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using DuckBot.Core.Emu;
+using DuckBot.Core.Infrastructure;
 
 namespace DuckBot.Core.Services
 {
@@ -40,8 +40,9 @@ namespace DuckBot.Core.Services
 
         public static BitmapSource? Capture(string instance)
         {
-            if (!AdbService.CaptureRawScreenshot(instance, out var data) || data.Length == 0)
-                return null;
+            var adb = AppServices.AdbService;
+            var (success, data) = adb.CaptureRawScreenshotAsync(instance).ConfigureAwait(false).GetAwaiter().GetResult();
+            if (!success || data.Length == 0) return null;
 
             try
             {

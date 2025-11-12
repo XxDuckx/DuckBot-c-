@@ -1,5 +1,5 @@
 ﻿using DuckBot.Core.Emu;
-using DuckBot.Data.Scripts;
+using DuckBot.Core.Logging;
 using DuckBot.Core.Services;
 using DuckBot.Data.Scripts;
 using DuckBot.Scripting;
@@ -10,19 +10,24 @@ using System.IO;
 
 namespace DuckBot.Core.Scripting
 {
-    public sealed class CvBridge : IScriptBridge
+    public sealed class CvBridge : IScriptBridge, IDisposable
     {
-        private static readonly ConcurrentDictionary<string, Mat> _templateCache = new();
+        private static readonly ConcurrentDictionary<string, Mat> TemplateCache = new();
 
         private readonly string _instance;
         private readonly string _game;
+        private readonly IAdbService _adbService;
+        private readonly IAppLogger _logger;
+        private bool _disposed;
 
         public string Name => "cv";
 
-        public CvBridge(string instance, string game)
+        public CvBridge(string instance, string game, IAdbService adbService, IAppLogger logger)
         {
             _instance = instance;
             _game = game;
+            _adbService = adbService;
+            _logger = logger;
         }
 
         public bool find(string imagePath, double confidence = 0.9)
@@ -31,7 +36,7 @@ namespace DuckBot.Core.Scripting
             using var template = LoadTemplate(imagePath);
             if (screenshot is null || template is null)
             {
-                LogService.Warn($"[{_instance}] CV find failed. Screenshot? {(screenshot is null ? "no" : "yes")}, template? {(template is null ? "no" : "yes")}.");
+                _logger.Warn($"[{_instance}] CV find failed. Screenshot? {(screenshot is null ? "no" : "yes")}, template? {(template is null ? "no" : "yes")}.");
                 return false;
             }
 
@@ -43,8 +48,11 @@ namespace DuckBot.Core.Scripting
 
         private Mat? CaptureFrame()
         {
-            if (!AdbService.CaptureRawScreenshot(_instance, out var data) || data.Length == 0)
+            var (success, data) = _adbService.CaptureRawScreenshotAsync(_instance).ConfigureAwait(false).GetAwaiter().GetResult();
+            if (!success || data.Length == 0)
+            {
                 return null;
+            }
 
             try
             {
@@ -52,7 +60,7 @@ namespace DuckBot.Core.Scripting
             }
             catch (Exception ex)
             {
-                LogService.Error($"[{_instance}] Failed to decode screenshot: {ex.Message}");
+                _logger.Error($"[{_instance}] Failed to decode screenshot: {ex.Message}");
                 return null;
             }
         }
@@ -67,20 +75,26 @@ namespace DuckBot.Core.Scripting
 
             if (!File.Exists(path))
             {
-                LogService.Warn($"Template image '{path}' not found.");
+                _logger.Warn($"Template image '{path}' not found.");
                 return null;
             }
 
             try
             {
-                var cached = _templateCache.GetOrAdd(path, key => Cv2.ImRead(key, ImreadModes.Color));
+                var cached = TemplateCache.GetOrAdd(path, key => Cv2.ImRead(key, ImreadModes.Color));
                 return cached?.Clone();
             }
             catch (Exception ex)
             {
-                LogService.Error($"Failed to load template '{path}': {ex.Message}");
+                _logger.Error($"Failed to load template '{path}': {ex.Message}");
                 return null;
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
         }
     }
 }

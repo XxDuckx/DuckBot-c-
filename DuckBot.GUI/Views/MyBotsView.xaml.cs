@@ -1,9 +1,13 @@
 ﻿using DuckBot.Core.Emu;
+using DuckBot.Core.Infrastructure;
+using DuckBot.Core.Logging;
 using DuckBot.Core.Services;
 using DuckBot.Data.Models;
 using DuckBot.Data.Storage;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -14,24 +18,40 @@ namespace DuckBot.GUI.Views
         public ObservableCollection<BotProfile> Bots { get; } = new();
         public ObservableCollection<string> AvailableInstances { get; } = new();
 
+        private readonly IAdbService _adbService;
+        private readonly IBotRunnerService _botRunner;
+        private readonly IAppLogger _logger;
+
         public MyBotsView()
         {
             InitializeComponent();
             DataContext = this;
 
-            // Load bots and rebuild instance lock table
-            foreach (var b in BotStore.LoadAll()) Bots.Add(b);
+            AppServices.ConfigureDefaults();
+            _adbService = AppServices.AdbService;
+            _botRunner = AppServices.BotRunner;
+            _logger = AppServices.Logger;
+
+            foreach (var bot in BotStore.LoadAll()) Bots.Add(bot);
             InstanceRegistry.Current.RebuildFromBots(Bots.Select(b => (b.Instance, b.Id)));
 
-            RefreshInstancesUi();
             BotGrid.ItemsSource = Bots;
+            Loaded += async (_, _) => await RefreshInstancesAsync(forceRefresh: true);
         }
 
-        private void RefreshInstancesUi()
+        private async Task RefreshInstancesAsync(bool forceRefresh = false)
         {
-            AdbService.Refresh();
-            AvailableInstances.Clear();
-            foreach (var name in AdbService.ListInstances()) AvailableInstances.Add(name);
+            try
+            {
+                var instances = await _adbService.ListInstancesAsync(forceRefresh);
+                AvailableInstances.Clear();
+                foreach (var name in instances) AvailableInstances.Add(name);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to refresh emulator instances: {ex.Message}");
+                MessageBox.Show("Unable to refresh LDPlayer instances. Check logs for details.", "DuckBot", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void CreateBot_Click(object sender, RoutedEventArgs e)
@@ -45,11 +65,12 @@ namespace DuckBot.GUI.Views
         {
             if ((sender as Button)?.DataContext is BotProfile bot)
             {
-                var win = new BotEditorWindow(bot);
-                win.Owner = Window.GetWindow(this);
+                var win = new BotEditorWindow(bot)
+                {
+                    Owner = Window.GetWindow(this)
+                };
                 if (win.ShowDialog() == true)
                 {
-                    // saved in dialog
                     InstanceRegistry.Current.RebuildFromBots(Bots.Select(b => (b.Instance, b.Id)));
                     BotGrid.Items.Refresh();
                 }
@@ -71,90 +92,88 @@ namespace DuckBot.GUI.Views
 
         private void DeleteSelected_Click(object sender, RoutedEventArgs e)
         {
-            var sel = BotGrid.SelectedItems.Cast<BotProfile>().ToList();
-            if (sel.Count == 0) return;
-            if (MessageBox.Show($"Delete {sel.Count} bot(s)?", "DuckBot", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
-            foreach (var b in sel)
+            var selected = BotGrid.SelectedItems.Cast<BotProfile>().ToList();
+            if (selected.Count == 0) return;
+            if (MessageBox.Show($"Delete {selected.Count} bot(s)?", "DuckBot", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            foreach (var bot in selected)
             {
-                InstanceRegistry.Current.ReleaseByBot(b.Id);
-                BotStore.Delete(b);
-                Bots.Remove(b);
+                InstanceRegistry.Current.ReleaseByBot(bot.Id);
+                BotStore.Delete(bot);
+                Bots.Remove(bot);
             }
         }
-        private void StartSelected_Click(object sender, RoutedEventArgs e)
+
+        private async void StartSelected_Click(object sender, RoutedEventArgs e)
         {
             foreach (BotProfile bot in BotGrid.SelectedItems)
             {
                 if (string.IsNullOrWhiteSpace(bot.Instance))
                 {
-                    LogService.Warn($"Bot '{bot.Name}' has no instance assigned.");
+                    _logger.Warn($"Bot '{bot.Name}' has no instance assigned.");
                     continue;
                 }
 
-                if (BotRunnerService.IsRunning(bot.Id))
+                if (_botRunner.IsRunning(bot.Id))
                 {
-                    LogService.Warn($"Bot '{bot.Name}' already running.");
+                    _logger.Warn($"Bot '{bot.Name}' already running.");
                     continue;
                 }
 
-                BotRunnerService.Start(bot);
-                LogService.Info($"Started {bot.Name}");
+                await _botRunner.StartAsync(bot);
+                _logger.Info($"Started {bot.Name}");
             }
             BotGrid.Items.Refresh();
         }
 
-        private void StopSelected_Click(object sender, RoutedEventArgs e)
+        private async void StopSelected_Click(object sender, RoutedEventArgs e)
         {
             foreach (BotProfile bot in BotGrid.SelectedItems)
             {
-                if (!BotRunnerService.IsRunning(bot.Id))
+                if (!_botRunner.IsRunning(bot.Id))
                 {
-                    LogService.Warn($"Bot '{bot.Name}' not running.");
+                    _logger.Warn($"Bot '{bot.Name}' not running.");
                     continue;
                 }
 
-                BotRunnerService.Stop(bot);
+                await _botRunner.StopAsync(bot);
             }
             BotGrid.Items.Refresh();
         }
 
-
-        private void QuickLaunch_Click(object sender, RoutedEventArgs e)
+        private async void QuickLaunch_Click(object sender, RoutedEventArgs e)
         {
             if (BotGrid.SelectedItem is BotProfile bot && !string.IsNullOrWhiteSpace(bot.Instance))
             {
-                bool ok = AdbService.LaunchInstance(bot.Instance);
-                MessageBox.Show(ok
-                    ? $"Quick launched {bot.Instance}"
-                    : $"Could not launch {bot.Instance}");
+                bool ok = await _adbService.LaunchInstanceAsync(bot.Instance);
+                MessageBox.Show(ok ? $"Quick launched {bot.Instance}" : $"Could not launch {bot.Instance}", "DuckBot");
             }
             else
             {
-                MessageBox.Show("Select a bot with an assigned instance first.");
+                MessageBox.Show("Select a bot with an assigned instance first.", "DuckBot");
             }
         }
 
-        private void FixEmulators_Click(object sender, RoutedEventArgs e)
+        private async void FixEmulators_Click(object sender, RoutedEventArgs e)
         {
-            AdbService.Refresh();
-            RefreshInstancesUi();
-            MessageBox.Show("Emulator list refreshed.");
+            await RefreshInstancesAsync(forceRefresh: true);
+            MessageBox.Show("Emulator list refreshed.", "DuckBot");
         }
+
+        private async void RefreshInst_Click(object sender, RoutedEventArgs e)
+            => await RefreshInstancesAsync(forceRefresh: true);
 
         private void Instance_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox cb && cb.DataContext is BotProfile bot)
+            if (sender is ComboBox combo && combo.DataContext is BotProfile bot)
             {
-                var chosen = cb.SelectedItem as string ?? "";
-                // try reserve
+                var chosen = combo.SelectedItem as string ?? string.Empty;
                 if (!InstanceRegistry.Current.TryReserve(chosen, bot.Id))
                 {
                     MessageBox.Show($"Instance '{chosen}' is already used by another bot.", "DuckBot");
-                    // revert UI to previous value
-                    cb.SelectedItem = bot.Instance;
+                    combo.SelectedItem = bot.Instance;
                     return;
                 }
-                // release previous, assign new
+
                 InstanceRegistry.Current.ReleaseByBot(bot.Id);
                 bot.Instance = chosen;
                 InstanceRegistry.Current.TryReserve(chosen, bot.Id);
@@ -162,14 +181,14 @@ namespace DuckBot.GUI.Views
             }
         }
 
-        private void RefreshInst_Click(object sender, RoutedEventArgs e) => RefreshInstancesUi();
-
         private void QuickEditor_Click(object sender, RoutedEventArgs e)
         {
             if (BotGrid.SelectedItem is BotProfile bot)
             {
-                var win = new BotEditorWindow(bot);
-                win.Owner = Window.GetWindow(this);
+                var win = new BotEditorWindow(bot)
+                {
+                    Owner = Window.GetWindow(this)
+                };
                 if (win.ShowDialog() == true)
                 {
                     InstanceRegistry.Current.RebuildFromBots(Bots.Select(b => (b.Instance, b.Id)));
@@ -178,7 +197,7 @@ namespace DuckBot.GUI.Views
             }
         }
 
-        private void PlayBot_Click(object sender, RoutedEventArgs e)
+        private async void PlayBot_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is BotProfile bot)
             {
@@ -187,27 +206,27 @@ namespace DuckBot.GUI.Views
                     MessageBox.Show("Assign an instance before starting this bot.", "DuckBot");
                     return;
                 }
-                if (BotRunnerService.IsRunning(bot.Id))
+                if (_botRunner.IsRunning(bot.Id))
                 {
                     MessageBox.Show("This bot is already running.", "DuckBot");
                     return;
                 }
-                BotRunnerService.Start(bot);
-                LogService.Info($"Started bot {bot.Name}");
+                await _botRunner.StartAsync(bot);
+                _logger.Info($"Started bot {bot.Name}");
             }
         }
 
-        private void StopBot_Click(object sender, RoutedEventArgs e)
+        private async void StopBot_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is BotProfile bot)
             {
-                if (!BotRunnerService.IsRunning(bot.Id))
+                if (!_botRunner.IsRunning(bot.Id))
                 {
                     MessageBox.Show("This bot is not currently running.", "DuckBot");
                     return;
                 }
-                BotRunnerService.Stop(bot);
-                LogService.Info($"Stopped bot {bot.Name}");
+                await _botRunner.StopAsync(bot);
+                _logger.Info($"Stopped bot {bot.Name}");
             }
         }
     }

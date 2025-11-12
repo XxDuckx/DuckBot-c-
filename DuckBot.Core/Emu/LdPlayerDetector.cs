@@ -1,67 +1,70 @@
-﻿using Microsoft.Win32;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace DuckBot.Core.Emu
 {
-    public static class LdPlayerDetector
+    public sealed class LdPlayerDetector : IEmulatorDetector
     {
-        public static List<string> DetectInstallPaths()
+        private static readonly string[] KnownInstallPaths =
         {
-            var paths = new List<string>();
+            @"C:\\LDPlayer9",
+            @"C:\\LDPlayer\\LDPlayer9",
+            @"C:\\LDPlayer4.0\\LDPlayer",
+            @"C:\\LDPlayer\\LDPlayer4",
+        };
 
-            // LDPlayer 9
-            var ld9 = TryGetPath(@"SOFTWARE\LDPlayer9");
-            if (!string.IsNullOrEmpty(ld9)) paths.Add(ld9);
-
-            // LDPlayer 5
-            var ld5 = TryGetPath(@"SOFTWARE\LDPlayer");
-            if (!string.IsNullOrEmpty(ld5)) paths.Add(ld5);
-
-            // Fallbacks
-            if (Directory.Exists(@"C:\LDPlayer\LDPlayer9")) paths.Add(@"C:\LDPlayer\LDPlayer9");
-            if (Directory.Exists(@"C:\LDPlayer4.0\LDPlayer")) paths.Add(@"C:\LDPlayer4.0\LDPlayer");
-
-            return paths.Distinct().ToList();
-
-            static string? TryGetPath(string key)
-            {
-                using var reg = Registry.LocalMachine.OpenSubKey(key);
-                if (reg == null) return null;
-                return reg.GetValue("InstallDir")?.ToString();
-            }
+        public Task<IReadOnlyCollection<string>> DetectInstallPathsAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() => (IReadOnlyCollection<string>)DetectInternal(cancellationToken), cancellationToken);
         }
 
-        public static List<string> GetInstances(string installPath)
+        private static IReadOnlyCollection<string> DetectInternal(CancellationToken cancellationToken)
+        {
+            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var key in new[] { @"SOFTWARE\\LDPlayer9", @"SOFTWARE\\LDPlayer" })
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string? path = TryReadRegistry(key);
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    paths.Add(NormalizePath(path));
+                }
+            }
+
+            foreach (var fallback in KnownInstallPaths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Directory.Exists(fallback))
+                {
+                    paths.Add(NormalizePath(fallback));
+                }
+            }
+
+            return paths.ToList();
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return path;
+            return Path.GetFullPath(path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        }
+
+        private static string? TryReadRegistry(string key)
         {
             try
             {
-                var exe = Path.Combine(installPath, "dnconsole.exe");
-                if (!File.Exists(exe)) return new List<string>();
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = exe,
-                    Arguments = "list2",
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                var p = Process.Start(psi);
-                string? output = p?.StandardOutput.ReadToEnd();
-                p?.WaitForExit();
-
-                var lines = output?.Split('\n')
-                                   .Select(x => x.Trim())
-                                   .Where(x => x.StartsWith("name"))
-                                   .ToList() ?? new();
-                return lines.Select(x => x.Split('=')[1].Trim()).ToList();
+                using var reg = Registry.LocalMachine.OpenSubKey(key);
+                return reg?.GetValue("InstallDir")?.ToString();
             }
             catch
             {
-                return new List<string>();
+                return null;
             }
         }
     }

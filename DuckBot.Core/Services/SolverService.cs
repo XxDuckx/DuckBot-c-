@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using DuckBot.Core.Infrastructure;
 using DuckBot.Core.Models;
 
 namespace DuckBot.Core.Services
@@ -12,7 +13,7 @@ namespace DuckBot.Core.Services
         public static void Initialize()
         {
             ApplySettings(SettingsManager.Current.Solvers);
-            LogService.Info("Solver service initialised.");
+            AppServices.Logger.Info("Solver service initialised.");
         }
 
         public static void ApplySettings(SolverSettings settings)
@@ -28,7 +29,7 @@ namespace DuckBot.Core.Services
         {
             _states[name] = enabled;
             SolverToggled?.Invoke(name, enabled);
-            LogService.Info($"Solver '{name}' {(enabled ? "enabled" : "disabled")}.");
+            AppServices.Logger.Info($"Solver '{name}' {(enabled ? "enabled" : "disabled")}.");
         }
 
         public static bool IsEnabled(string name) => _states.TryGetValue(name, out var enabled) && enabled;

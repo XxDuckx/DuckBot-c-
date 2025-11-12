@@ -1,31 +1,47 @@
-﻿using System.Windows;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
+using DuckBot.Core.Infrastructure;
+using DuckBot.Core.Logging;
+using DuckBot.Core.Services;
 
 namespace DuckBot.GUI.Views
 {
     public partial class DashboardView : UserControl
     {
         private readonly string _username;
+        private readonly IAdbService _adbService;
+        private readonly IAppLogger _logger;
 
         public DashboardView(string username)
         {
             InitializeComponent();
+            AppServices.ConfigureDefaults();
             _username = username;
+            _adbService = AppServices.AdbService;
+            _logger = AppServices.Logger;
             WelcomeText.Text = $"Welcome, {_username}";
-            LoadInstances();
+            Loaded += async (_, _) => await LoadInstancesAsync();
         }
 
-        private void LoadInstances()
+        private async Task LoadInstancesAsync()
         {
-            // Placeholder for LDPlayer detection
-            InstanceList.Items.Clear();
-            InstanceList.Items.Add("LDPlayer-1 (Port 5555)");
-            InstanceList.Items.Add("LDPlayer-2 (Port 5557)");
+            try
+            {
+                var instances = await _adbService.ListInstancesAsync(forceRefresh: true);
+                InstanceList.ItemsSource = instances;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to load emulator instances: {ex.Message}");
+                InstanceList.ItemsSource = Array.Empty<string>();
+            }
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e)
+        private async void Refresh_Click(object sender, RoutedEventArgs e)
         {
-            LoadInstances();
+            await LoadInstancesAsync();
             MessageBox.Show("Instance list refreshed!", "DuckBot");
         }
     }
