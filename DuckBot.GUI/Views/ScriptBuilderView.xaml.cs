@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using DuckBot.Core.Scripts;
+using DuckBot.Data.Scripts;
 using DuckBot.Core.Services;
 using DuckBot.Data.Models;
 using DuckBot.Data.Templates;
@@ -31,23 +31,28 @@ namespace DuckBot.GUI.Views
             InitializeComponent();
             StepSequence.ItemsSource = _steps;
             LoadGames();
+            LoadActions();
         }
 
         private void LoadGames()
         {
-            var games = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            var games = new List<string>();
             if (Directory.Exists("Games"))
             {
                 foreach (var dir in Directory.GetDirectories("Games"))
                     games.Add(Path.GetFileName(dir));
             }
+
             string scriptsRoot = Path.Combine("data", "scripts");
             if (Directory.Exists(scriptsRoot))
             {
                 foreach (var dir in Directory.GetDirectories(scriptsRoot))
                     games.Add(Path.GetFileName(dir));
             }
-            if (!games.Any()) games.Add("West Game");
+
+            if (!games.Any())
+                games.Add("West Game");
+
             GameSelect.ItemsSource = games;
             GameSelect.SelectedItem = games.First();
         }
@@ -63,14 +68,18 @@ namespace DuckBot.GUI.Views
         {
             ScriptSelect.Items.Clear();
             _scriptPaths.Clear();
-            string dir = Path.Combine("data", "scripts", game);
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+            string dir = ScriptIO.GetGameDirectory(game);
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
             foreach (var file in Directory.GetFiles(dir, "*.json"))
             {
                 string name = Path.GetFileNameWithoutExtension(file);
                 _scriptPaths[name] = file;
                 ScriptSelect.Items.Add(name);
             }
+
             if (ScriptSelect.Items.Count > 0)
                 ScriptSelect.SelectedIndex = 0;
             else
@@ -83,6 +92,7 @@ namespace DuckBot.GUI.Views
             _steps.Clear();
             foreach (var step in model.Steps)
                 _steps.Add(step.Clone());
+
             _variables.Clear();
             foreach (var variable in model.Variables)
                 _variables.Add(new ScriptVariable
@@ -93,30 +103,6 @@ namespace DuckBot.GUI.Views
                     Prompt = variable.Prompt,
                     Required = variable.Required
                 });
-            RebuildVariables();
-            RefreshInspector();
-            UpdateStatus($"Loaded script '{model.Name}'.");
-        }
-
-        private void GameSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (GameSelect.SelectedItem is string game)
-            {
-                StepTemplates.EnsureGameTemplates(game);
-                LoadActions();
-                LoadScripts(game);
-            }
-        }
-
-        private void ScriptSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ScriptSelect.SelectedItem is string name && _scriptPaths.TryGetValue(name, out var path))
-            {
-                _currentPath = path;
-                var model = ScriptIO.Load(path);
-                if (string.IsNullOrWhiteSpace(model.Game)) model.Game = GameSelect.SelectedItem as string ?? "";
-                ResetEditor(model);
-            }
         }
 
         private void New_Click(object sender, RoutedEventArgs e)
@@ -126,14 +112,17 @@ namespace DuckBot.GUI.Views
             ResetEditor(new ScriptModel { Game = game, Name = "New Script" });
             ScriptSelect.SelectedItem = null;
         }
+
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             if (!EnsureGameSelected(out var game)) return;
+
             if (string.IsNullOrWhiteSpace(_currentPath))
             {
                 SaveAs_Click(sender, e);
                 return;
             }
+
             WriteCurrentScript(game, _currentPath);
             UpdateStatus($"Saved '{_current.Name}'.");
         }
@@ -141,19 +130,23 @@ namespace DuckBot.GUI.Views
         private void SaveAs_Click(object sender, RoutedEventArgs e)
         {
             if (!EnsureGameSelected(out var game)) return;
+
             var dialog = new SaveFileDialog
             {
                 Filter = "DuckBot Script (*.json)|*.json",
-                InitialDirectory = Path.GetFullPath(Path.Combine("data", "scripts", game)),
+                InitialDirectory = Path.GetFullPath(ScriptIO.GetGameDirectory(game)),
                 FileName = $"{_current.Name}.json"
             };
+
             if (dialog.ShowDialog() == true)
             {
                 WriteCurrentScript(game, dialog.FileName);
                 _currentPath = dialog.FileName;
                 _current.Name = Path.GetFileNameWithoutExtension(dialog.FileName);
+
                 if (!_scriptPaths.ContainsKey(_current.Name))
                     ScriptSelect.Items.Add(_current.Name);
+
                 _scriptPaths[_current.Name] = dialog.FileName;
                 ScriptSelect.SelectedItem = _current.Name;
                 UpdateStatus($"Saved as '{_current.Name}'.");
@@ -172,33 +165,8 @@ namespace DuckBot.GUI.Views
                 Prompt = v.Prompt,
                 Required = v.Required
             }).ToList();
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            ScriptIO.Save(_current, path);
-        }
 
-        private void Export_Click(object sender, RoutedEventArgs e)
-        {
-            if (!EnsureGameSelected(out var game)) return;
-            var dialog = new SaveFileDialog
-            {
-                Filter = "JavaScript File (*.js)|*.js",
-                FileName = $"{_current.Name}.js"
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                string js = ScriptTranspiler.Transpile(BuildModel(), null);
-                File.WriteAllText(dialog.FileName, js);
-                UpdateStatus($"Exported JS to {Path.GetFileName(dialog.FileName)}.");
-            }
-        }
-
-        private void TestRun_Click(object sender, RoutedEventArgs e)
-        {
-            string js = ScriptTranspiler.Transpile(BuildModel(), null);
-            LogService.Info("[ScriptBuilder] Preview output:");
-            foreach (var line in js.Split(Environment.NewLine).Take(20))
-                LogService.Info(line);
-            UpdateStatus("Script transpiled to logs (first 20 lines).");
+            ScriptIO.Save(path, _current);
         }
 
         private void Capture_Click(object sender, RoutedEventArgs e)
@@ -207,6 +175,7 @@ namespace DuckBot.GUI.Views
             var cropper = new CropperWindow();
             cropper.Owner = Window.GetWindow(this);
             cropper.LoadImage(image, _current.Game, "capture");
+
             if (cropper.ShowDialog() == true)
             {
                 UpdateStatus($"Saved crop {_current.Game}/{cropper.SavedFileName}");
@@ -220,6 +189,7 @@ namespace DuckBot.GUI.Views
             picker.Owner = Window.GetWindow(this);
             picker.LoadImage(image);
             picker.ShowDialog();
+
             if (picker.SelectedPoint is Point pt)
             {
                 UpdateStatus($"Selected coordinates {pt.X:0}, {pt.Y:0}");
@@ -240,10 +210,12 @@ namespace DuckBot.GUI.Views
                 game = g;
                 return true;
             }
+
             MessageBox.Show("Select a game first.", "DuckBot");
             game = string.Empty;
             return false;
         }
+
         private void ActionsLibrary_DoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ActionsLibrary.SelectedItem is string type)
@@ -284,6 +256,7 @@ namespace DuckBot.GUI.Views
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
                 row.Children.Add(new TextBlock { Text = kv.Key, Width = 120, VerticalAlignment = VerticalAlignment.Center });
                 FrameworkElement editor;
+
                 switch (kv.Value)
                 {
                     case bool b:
@@ -292,8 +265,8 @@ namespace DuckBot.GUI.Views
                         chk.Unchecked += (_, _) => SetStepParam(_selectedStep, kv.Key, false);
                         editor = chk;
                         break;
-                    case int or long:
-                    case float or double:
+
+                    case int or long or float or double:
                         var num = new TextBox { Width = 140, Text = _selectedStep.GetValue<double>(kv.Key, Convert.ToDouble(kv.Value)).ToString("0.##") };
                         num.LostFocus += (_, _) =>
                         {
@@ -302,12 +275,14 @@ namespace DuckBot.GUI.Views
                         };
                         editor = num;
                         break;
+
                     default:
                         var box = new TextBox { Width = 200, Text = _selectedStep.GetValue<string>(kv.Key, kv.Value?.ToString() ?? string.Empty) };
                         box.LostFocus += (_, _) => SetStepParam(_selectedStep, kv.Key, box.Text);
                         editor = box;
                         break;
                 }
+
                 row.Children.Add(editor);
                 InspectorContent.Children.Add(row);
             }
@@ -328,6 +303,7 @@ namespace DuckBot.GUI.Views
             var editor = new ScriptStepEditor();
             editor.Owner = Window.GetWindow(this);
             editor.LoadStep(step);
+
             if (editor.ShowDialog() == true)
             {
                 StepSequence.Items.Refresh();
@@ -391,6 +367,7 @@ namespace DuckBot.GUI.Views
                 VariablesHost.Children.Add(row);
             }
         }
+
         private void StepSequence_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStart = e.GetPosition(null);
@@ -448,5 +425,53 @@ namespace DuckBot.GUI.Views
         {
             StatusText.Text = message;
         }
+
+        // === XAML Event Handlers ===
+
+        private void GameSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (GameSelect.SelectedItem is string game)
+                LoadScripts(game);
+        }
+
+        private void ScriptSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ScriptSelect.SelectedItem is string name && _scriptPaths.TryGetValue(name, out var path))
+            {
+                var model = ScriptIO.Load(path);
+                _currentPath = path;
+                ResetEditor(model);
+                UpdateStatus($"Loaded '{name}'.");
+            }
+        }
+
+        private void Export_Click(object sender, RoutedEventArgs e)
+        {
+            if (_steps.Count == 0)
+            {
+                MessageBox.Show("No steps to export.", "DuckBot");
+                return;
+            }
+
+            var model = BuildModel();
+            var json = ScriptIO.ToJson(model);
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "JSON File (*.json)|*.json",
+                FileName = $"{model.Name}.json"
+            };
+            if (saveDialog.ShowDialog() == true)
+            {
+                File.WriteAllText(saveDialog.FileName, json);
+                UpdateStatus($"Exported script to {saveDialog.FileName}");
+            }
+        }
+
+        private void TestRun_Click(object sender, RoutedEventArgs e)
+        {
+            var model = BuildModel();
+            MessageBox.Show($"Test running '{model.Name}' with {model.Steps.Count} steps.", "DuckBot");
+        }
+
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DuckBot.Data.Models;
 
 namespace DuckBot.Core.Models
 {

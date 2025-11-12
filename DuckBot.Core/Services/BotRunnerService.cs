@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using DuckBot.Core.Services;
+﻿using DuckBot.Core.Scripting;
+using DuckBot.Data.Scripts;
 using DuckBot.Data.Models;
+using DuckBot.Data.Scripts;
 using DuckBot.Scripting;
 using DuckBot.Scripting.Bridges;
+using System;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
+
 
 namespace DuckBot.Core.Services
 {
@@ -21,6 +24,11 @@ namespace DuckBot.Core.Services
         public static void Start(BotProfile bot)
         {
             if (_running.ContainsKey(bot.Id)) return;
+            if (string.IsNullOrWhiteSpace(bot.Instance))
+            {
+                LogService.Warn($"Bot '{bot.Name}' has no emulator instance assigned.");
+                return;
+            }
 
             var cts = new CancellationTokenSource();
             _running[bot.Id] = cts;
@@ -32,7 +40,8 @@ namespace DuckBot.Core.Services
             {
                 try
                 {
-                    var engine = CreateEngine(bot, cts.Token);
+                    using var ocr = new OcrBridge(bot.Instance);
+                    var engine = CreateEngine(bot, cts.Token, ocr);
                     string script = LoadScriptFor(bot);
                     _status[bot.Id] = "Running";
                     await engine.RunAsync(script, cts.Token);
@@ -68,8 +77,16 @@ namespace DuckBot.Core.Services
         }
 
         private static JsEngine CreateEngine(BotProfile bot, CancellationToken token)
+            => CreateEngine(bot, token, null);
+
+        private static JsEngine CreateEngine(BotProfile bot, CancellationToken token, OcrBridge? sharedOcr)
         {
-            var eng = new JsEngine(new Util(LogService.Info, () => token));
+            var util = new Util(LogService.Info, () => token);
+            var adb = new AdbBridge(bot.Instance, bot.Name);
+            var cv = new CvBridge(bot.Instance, bot.Game);
+            var ocr = sharedOcr ?? new OcrBridge(bot.Instance);
+
+            var eng = new JsEngine(util, adb, cv, ocr);
             eng.OnPrint += (s) => LogService.Info($"[{bot.Name}] {s}");
             // future: add adb/cv/ocr bridges here
             return eng;
@@ -77,12 +94,27 @@ namespace DuckBot.Core.Services
 
         private static string LoadScriptFor(BotProfile bot)
         {
-            // pick first enabled script, else a default loop
-            var s = bot.Scripts?.Find(x => x.Enabled) ?? new ScriptSetting { Name = "default" };
-            string gamesRoot = Path.Combine(AppContext.BaseDirectory, "Games", bot.Game.Replace(" ", ""));
-            string jsPath = Path.Combine(gamesRoot, "scripts", $"{San(s.Name)}.js");
-            if (File.Exists(jsPath))
-                return File.ReadAllText(jsPath);
+            if (bot.Scripts is { Count: > 0 })
+            {
+                var builder = new System.Text.StringBuilder();
+                foreach (var scriptSetting in bot.Scripts)
+                {
+                    if (!scriptSetting.Enabled) continue;
+                    string path = Path.Combine(ScriptIO.GetGameDirectory(bot.Game), $"{San(scriptSetting.Name)}.json");
+                    if (!File.Exists(path))
+                    {
+                        LogService.Warn($"Script '{scriptSetting.Name}' not found for bot '{bot.Name}'.");
+                        continue;
+                    }
+
+                    var model = ScriptIO.Load(path);
+                    var vars = scriptSetting.Variables ?? new System.Collections.Generic.Dictionary<string, object>();
+                    builder.AppendLine(ScriptTranspiler.Transpile(model, vars));
+                }
+
+                if (builder.Length > 0)
+                    return builder.ToString();
+            }
 
             // fallback JS stub
             return @"

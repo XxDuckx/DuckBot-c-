@@ -9,6 +9,8 @@ namespace DuckBot.Scripting.Bridges
         private readonly Action<string> _log;
         private readonly Func<CancellationToken> _getToken;
 
+        public string Name => "util";
+
         public Util(Action<string> log, Func<CancellationToken> getToken)
         {
             _log = log;

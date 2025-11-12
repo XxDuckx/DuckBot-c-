@@ -98,7 +98,52 @@
 
             <!-- Mail Login -->
             <TabItem Header="Mail Login">
-                <TextBlock Margin="12" Foreground="{StaticResource TextMutedBrush}" Text="(Stub — add mail account table later)"/>
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Account Library" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Border Background="{StaticResource SurfaceBrush}" Padding="4">
+                            <DataGrid x:Name="AccountLibraryGrid"
+                                      ItemsSource="{Binding MailAccounts}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      Margin="0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="2*"/>
+                                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="3*"/>
+                                    <DataGridTextColumn Header="Password" Binding="{Binding Password}" Width="2*"/>
+                                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Add Account" Width="120" Margin="0,0,8,0" Click="AddAccount_Click"/>
+                            <Button Content="Remove Selected" Width="140" Margin="0,0,8,0" Click="RemoveAccount_Click"/>
+                            <Button Content="Save Accounts" Width="130" Click="SaveAccounts_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Bot Account Rotation" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Border Background="{StaticResource SurfaceBrush}" Padding="8">
+                            <StackPanel>
+                                <ListBox x:Name="BotAccountsList"
+                                         ItemsSource="{Binding Bot.Accounts}"
+                                         DisplayMemberPath="Email"
+                                         Height="180"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button Content="Assign from Library" Width="150" Margin="0,0,8,0" Click="AssignAccount_Click"/>
+                                    <Button Content="Remove" Width="100" Click="RemoveBotAccount_Click"/>
+                                </StackPanel>
+                                <TextBlock Text="Accounts rotate sequentially when the bot supports rotation." Margin="0,12,0,0" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </TabItem>
         </TabControl>
 

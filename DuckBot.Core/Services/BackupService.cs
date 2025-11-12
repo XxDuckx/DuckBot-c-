@@ -62,7 +62,7 @@ namespace DuckBot.Core.Services
             foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
             {
                 var relative = Path.GetRelativePath(sourceDir, file);
-                var entryPath = Path.Combine(prefix, relative).Replace('\', ' / ');
+                var entryPath = Path.Combine(prefix, relative).Replace('\\', '/');
                 archive.CreateEntryFromFile(file, entryPath, CompressionLevel.Optimal);
             }
         }

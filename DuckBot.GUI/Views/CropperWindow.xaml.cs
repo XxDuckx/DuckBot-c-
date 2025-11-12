@@ -1,4 +1,4 @@
-﻿using DuckBot.Core.Scripts;
+﻿using DuckBot.Data.Scripts;
 using System;
 using System.Windows;
 using System.Windows.Controls;

@@ -2,12 +2,13 @@
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DuckBot.Core.Emu;
 
 namespace DuckBot.Core.Services
 {
     public static class ScreenshotService
     {
-        // Placeholder bitmap (replace with real ADB screencap later)
+        // Placeholder bitmap fallback when no ADB screenshot is available
         public static BitmapSource GeneratePlaceholder(string caption)
         {
             int w = 480, h = 270, dpi = 96;
@@ -29,6 +30,34 @@ namespace DuckBot.Core.Services
             wb.AddDirtyRect(new System.Windows.Int32Rect(0, 0, w, h));
             wb.Unlock();
             return wb;
+        }
+
+        public static BitmapSource CaptureOrPlaceholder(string instance, string caption)
+        {
+            var shot = Capture(instance);
+            return shot ?? GeneratePlaceholder(caption);
+        }
+
+        public static BitmapSource? Capture(string instance)
+        {
+            if (!AdbService.CaptureRawScreenshot(instance, out var data) || data.Length == 0)
+                return null;
+
+            try
+            {
+                using var ms = new MemoryStream(data);
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.CacheOption = BitmapCacheOption.OnLoad;
+                img.StreamSource = ms;
+                img.EndInit();
+                img.Freeze();
+                return img;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

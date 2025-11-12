@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using DuckBot.Data.Models;
 
-namespace DuckBot.Core.Scripts
+namespace DuckBot.Data.Scripts
 {
     public static class ScriptIO
     {
@@ -24,12 +25,34 @@ namespace DuckBot.Core.Scripts
 
         public static List<ScriptModel> LoadAllFromGame(string game)
         {
-            string dir = Path.Combine("data", "scripts", game);
+            string dir = GetGameDirectory(game);
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             return Directory.GetFiles(dir, "*.json")
                             .Select(Load)
                             .ToList();
+        }
+
+        public static string GetGameDirectory(string game)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var builder = new StringBuilder(game.Length);
+            foreach (char ch in game)
+            {
+                if (invalid.Contains(ch)) continue;
+                if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
+                {
+                    builder.Append('_');
+                }
+                else
+                {
+                    builder.Append(ch);
+                }
+            }
+
+            string safe = builder.ToString().Trim();
+            if (string.IsNullOrWhiteSpace(safe)) safe = "Game";
+            return Path.Combine("data", "scripts", safe);
         }
     }
 }

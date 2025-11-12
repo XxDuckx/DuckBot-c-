@@ -1,14 +1,14 @@
-﻿using System;
+﻿using DuckBot.Core.Services;
+using DuckBot.Data.Models;
+using DuckBot.Data.Scripts;
+using DuckBot.Data.Storage;
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using DuckBot.Core.Services;
-using DuckBot.Data.Models;
-using DuckBot.Data.Storage;
-using DuckBot.Core.Scripts;
 
 namespace DuckBot.GUI.Views
 {
@@ -36,34 +36,39 @@ namespace DuckBot.GUI.Views
         private void RefreshTable()
         {
             Items.Clear();
-            foreach (var bot in BotStore.LoadAll())
+            var bots = BotStore.LoadAll();
+
+            foreach (var bot in bots)
             {
-                var status = BotRunnerService.GetStatus(bot.Id);
-                if (status != "Idle" || BotRunnerService.IsRunning(bot.Id))
+                var running = BotRunnerService.IsRunning(bot);
+                Items.Add(new RunningRow
                 {
-                    Items.Add(new RunningRow
-                    {
-                        Id = bot.Id,
-                        Name = bot.Name,
-                        Game = bot.Game,
-                        Instance = bot.Instance,
-                        Status = status
-                    });
-                }
+                    Id = bot.Id,
+                    Name = bot.Name,
+                    Game = bot.Game,
+                    Instance = bot.Instance,
+                    Status = running ? "Running" : "Stopped"
+                });
             }
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshTable();
+        private void Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshTable();
+        }
 
         private void StopSelected_Click(object sender, RoutedEventArgs e)
         {
-            var sel = RunningGrid.SelectedItems.Cast<RunningRow>().ToList();
-            if (sel.Count == 0) return;
-            foreach (var row in sel)
+            var selected = RunningGrid.SelectedItems.Cast<RunningRow>().ToList();
+            if (selected.Count == 0) return;
+
+            foreach (var row in selected)
             {
                 var bot = BotStore.LoadAll().FirstOrDefault(b => b.Id == row.Id);
-                if (bot != null) BotRunnerService.Stop(bot);
+                if (bot != null)
+                    BotRunnerService.Stop(bot);
             }
+
             RefreshTable();
         }
 
@@ -74,12 +79,14 @@ namespace DuckBot.GUI.Views
                 MessageBox.Show("Select a running bot first.");
                 return;
             }
-            var placeholder = ScreenshotService.GeneratePlaceholder($"{row.Name} @ {DateTime.Now:HH:mm:ss}");
-            Shot.Source = placeholder;
+
+            var capture = ScreenshotService.CaptureOrPlaceholder(row.Instance, $"{row.Name} @ {DateTime.Now:HH:mm:ss}");
+            Shot.Source = capture;
+
             var bot = BotStore.LoadAll().FirstOrDefault(b => b.Id == row.Id);
             if (bot != null)
             {
-                var fileName = ImageManager.SaveCrop(placeholder, bot.Game, "screenshot");
+                string fileName = ImageManager.SaveCrop(capture, bot.Game, "screenshot");
                 _lastScreenshotPath = Path.Combine(ImageManager.GetImageDir(bot.Game), fileName);
                 ShotInfo.Text = $"Instance: {row.Instance} • Saved {fileName}";
             }
@@ -98,6 +105,7 @@ namespace DuckBot.GUI.Views
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
+            // If we have a saved screenshot, open its folder
             if (!string.IsNullOrWhiteSpace(_lastScreenshotPath) && File.Exists(_lastScreenshotPath))
             {
                 Process.Start(new ProcessStartInfo
@@ -109,6 +117,7 @@ namespace DuckBot.GUI.Views
                 return;
             }
 
+            // Otherwise open the current bot's image folder
             if (RunningGrid.SelectedItem is RunningRow row)
             {
                 var bot = BotStore.LoadAll().FirstOrDefault(b => b.Id == row.Id);
@@ -116,6 +125,7 @@ namespace DuckBot.GUI.Views
                 {
                     string dir = ImageManager.GetImageDir(bot.Game);
                     Directory.CreateDirectory(dir);
+
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = "explorer",

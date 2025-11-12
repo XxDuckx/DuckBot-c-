@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using DuckBot.Data.Models;
 
-namespace DuckBot.Core.Scripts
+namespace DuckBot.Data.Scripts
 {
     public static class ScriptTranspiler
     {

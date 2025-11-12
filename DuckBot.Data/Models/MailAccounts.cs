@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DuckBot.Core.Models
+namespace DuckBot.Data.Models
 {
     public class MailAccount
     {

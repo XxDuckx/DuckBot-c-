@@ -29,6 +29,7 @@ namespace DuckBot.GUI.Views
 
         private void RefreshInstancesUi()
         {
+            AdbService.Refresh();
             AvailableInstances.Clear();
             foreach (var name in AdbService.ListInstances()) AvailableInstances.Add(name);
         }

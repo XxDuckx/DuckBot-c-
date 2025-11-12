@@ -18,9 +18,21 @@ namespace DuckBot.Scripting
             _eng.SetValue("print", new Action<object>(x => OnPrint?.Invoke(x?.ToString() ?? "")));
             foreach (var b in bridges)
             {
-                var name = b.GetType().Name;
-                // expose e.g. Util -> global.util
-                _eng.SetValue(char.ToLowerInvariant(name[0]) + name[1..], b);
+                string name = b switch
+                {
+                    IScriptBridge bridge => bridge.Name,
+                    _ => b.GetType().Name
+                };
+
+                if (string.IsNullOrWhiteSpace(name))
+                    name = b.GetType().Name;
+
+                if (name.Length == 1)
+                    name = name.ToLowerInvariant();
+                else if (!char.IsLower(name[0]))
+                    name = char.ToLowerInvariant(name[0]) + name[1..];
+
+                _eng.SetValue(name, b);
             }
         }
 
