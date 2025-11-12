@@ -29,7 +29,7 @@ namespace DuckBot.GUI.Views.Settings
             MessageBox.Show($"Backup created:\n{path}", "DuckBot");
         }
 
-        private void OpenFolderBtn_Click(object sender, RoutedEventArgs e) => BackupService.OpenBackupFolder(BackupService.GetDefaultBackupDir());
+        private void OpenFolderBtn_Click(object sender, RoutedEventArgs e) => BackupService.OpenBackupFolder("data/backups");
 
 
         private void RestoreBtn_Click(object sender, RoutedEventArgs e)

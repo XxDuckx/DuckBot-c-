@@ -166,7 +166,7 @@ namespace DuckBot.GUI.Views
                 Required = v.Required
             }).ToList();
 
-            ScriptIO.Save(path, _current);
+            ScriptIO.Save(_current, path);
         }
 
         private void Capture_Click(object sender, RoutedEventArgs e)
@@ -454,7 +454,7 @@ namespace DuckBot.GUI.Views
             }
 
             var model = BuildModel();
-            var json = ScriptIO.ToJson(model);
+            var json = JsonSerializer.Serialize(model);
             var saveDialog = new SaveFileDialog
             {
                 Filter = "JSON File (*.json)|*.json",
