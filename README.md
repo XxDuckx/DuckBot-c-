@@ -58,20 +58,6 @@ DuckBot/
 
 ---
 
-## 🚀 Next Steps
-1. **Commit and Push**
-   ```bash
-   git add .
-   git commit -m "Full DuckBot core + settings scaffolding"
-   git branch -M main
-   git push -u origin main --force
-
-
- 2. Codex Review Prompt
-
-“This repo contains the complete DuckBot scaffolding for C# WPF.
-Please refine the UI styling, improve layout spacing and colors, and complete the missing stubs for Logs, Live Runner, and UpdateService.”
-
 🧩 License
 
 Personal development project — not for resale or redistribution.
